@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_todo_application/features/home/model/task_model.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'features/home/view/home_page.dart';
 
 void main() async{
   await Hive.initFlutter();
 
-  Hive.registerAdapter(TodoAdapter());
+  Hive.registerAdapter(TaskModelAdapter());
   runApp(const MyApp());
 }
 
