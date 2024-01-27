@@ -68,24 +68,23 @@ class _TaskListState extends State<TaskList> {
   // List<Task> tasks = [];
 
   late Box tasksBox;
+  List<TaskModel> taskModelList=[];
 
   @override
   void initState() {
     super.initState();
     loadTasks();
-    //  _loadTasks();
+    //  _loadTasks()    ;
   }
 
   loadTasks() async{
     tasksBox= await Hive.openBox('tasks');
+    List taskList=tasksBox.values.toList();
+    taskModelList=taskList.map((e)=>TaskModel.fromJson(e)).toList();
+    setState(() {
+      
+    });
   }
-
-  // void _loadTasks() async {
-  //   List<Task> loadedTasks = await dbHelper.getTasksBySection(widget.section);
-  //   setState(() {
-  //     tasks = loadedTasks;
-  //   });
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -98,13 +97,13 @@ class _TaskListState extends State<TaskList> {
         SizedBox(
           height: 20,
         ),
-        // ListView.builder(
-        //   itemCount: taskList.length,
-        //   shrinkWrap: true,
-        //   itemBuilder: (context, index) {
-        //     return TaskTile(task: taskList[index]);
-        //   },
-        // ),
+        ListView.builder(
+          itemCount: taskModelList.length,
+          shrinkWrap: true,
+          itemBuilder: (context, index) {
+            return TaskTile(task: taskModelList[index]);
+          },
+        ),
       ],
     );
   }
@@ -134,7 +133,7 @@ class TaskTile extends StatelessWidget {
           ),
           SlidableAction(
             onPressed: (context) {
-              _showDeleteConfirmationDialog(context);
+              _showDeleteConfirmationDialog(context,task.id);
             },
             backgroundColor: Color(0xFF0392CF),
             foregroundColor: Colors.white,
@@ -150,7 +149,7 @@ class TaskTile extends StatelessWidget {
     );
   }
 
- Future<void> _showDeleteConfirmationDialog(BuildContext context) async {
+ Future<void> _showDeleteConfirmationDialog(BuildContext context, String? id) async {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -169,6 +168,8 @@ class TaskTile extends StatelessWidget {
                 // Perform the delete operation here
                 // ...
                 // After deleting, close the dialog
+                final tasksBox = Hive.box('tasks');
+                tasksBox.delete(id);
                 Navigator.of(context).pop();
               },
               child: Text('Yes'),

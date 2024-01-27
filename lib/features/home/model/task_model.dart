@@ -5,7 +5,7 @@ part 'task_model.g.dart';
 @HiveType(typeId: 0)
 class TaskModel {
   @HiveField(0)
-  int? id;
+  String? id;
   @HiveField(1)
   String title;
   @HiveField(2)
@@ -38,5 +38,15 @@ class TaskModel {
       'startTime': startTime,
       'endTime': endTime
     };
+  }
+
+  factory TaskModel.fromJson(Map<dynamic, dynamic> map) {
+    return TaskModel(
+        title: map['title'],
+        description: map['description'],
+        category: map['category'],
+        date: map['date'],
+        startTime: map['startTime'],
+        endTime: map['endTime']);
   }
 }
