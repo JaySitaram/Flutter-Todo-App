@@ -22,16 +22,29 @@ class _HomePageState extends ConsumerState<HomePage>
     tabController = TabController(length: 3, vsync: this);
   }
 
+  var taskModelData;
+  String selectedVal = 'Today';
+
   @override
   Widget build(BuildContext context) {
+  taskModelData = ref.watch(taskProvider);
+    taskModelData.loadTasks(selectedVal);
     return Scaffold(
       appBar: AppBar(
-          title: Text('Task Manager',style: TextStyle(fontFamily: "SemiBold"),),
+          title: Text(
+            'Task Manager',
+            style: TextStyle(fontFamily: "SemiBold"),
+          ),
           bottom: TabBar(
-             labelStyle:  TextStyle(fontFamily: "Medium"),
+            labelStyle: TextStyle(fontFamily: "Medium"),
             controller: tabController,
-            onTap: (value){
-              
+            onTap: (value) {
+              taskModelData = ref.read(taskProvider);
+              print('this is >> ${taskDayTitle[value]}');
+              setState(() {
+                selectedVal = taskDayTitle[value];
+              });
+              taskModelData.loadTasks(selectedVal);
             },
             tabs: taskDayTitle.map((e) => Tab(text: e)).toList(),
           )),
@@ -40,19 +53,32 @@ class _HomePageState extends ConsumerState<HomePage>
           children: taskDayTitle
               .map((e) => TaskList(
                     section: e,
+                    taskList: getTaskList(e),
                   ))
               .toList()),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async {
           // Handle the plus icon tap
           // You can add navigation or any other action here
-            final taskProviderData = ref.read(taskProvider);
-            taskProviderData.assignTaskItem(TaskModel());
+          final taskProviderData = ref.read(taskProvider);
+          taskProviderData.assignTaskItem(TaskModel());
           Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => AddOrEditTaskPage()));
+
+          // taskProviderData.loadTasks(selectedVal);
+          // setState(() {});
         },
         child: Icon(Icons.add),
       ),
     );
+  }
+
+  getTaskList(e) {
+    if (e == 'Today')
+      return taskModelData.todayTaskList;
+    else if (e == 'Tomorrow')
+      return taskModelData.tomorrowTaskList;
+    else
+      return taskModelData.upcomingTaskList;
   }
 }

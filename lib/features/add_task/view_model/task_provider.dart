@@ -13,14 +13,23 @@ class TaskProvider extends ChangeNotifier {
   TaskModel? taskModel;
   TextEditingController taskTitleController = TextEditingController();
   TextEditingController taskDescController = TextEditingController();
-  List<String> categoryItems = ['Design', 'Development', 'Research', 'Resources', 'Supports'];
+  List<String> categoryItems = [
+    'Design',
+    'Development',
+    'Research',
+    'Resources',
+    'Supports'
+  ];
   TextEditingController startTimeController = TextEditingController();
   TextEditingController endTimeController = TextEditingController();
   TextEditingController dateController = TextEditingController();
   String selectedCat = '';
   TimeOfDay? selectedTime;
   DateTime selectedDate = DateTime.now();
-  List<TaskModel> taskModelList=[];
+  List<TaskModel> todayTaskList = [];
+  bool isUpdate = false;
+  List<TaskModel> tomorrowTaskList = [];
+  List<TaskModel> upcomingTaskList = [];
 
   void selectCategory(String? value) {
     selectedCat = value!;
@@ -30,29 +39,28 @@ class TaskProvider extends ChangeNotifier {
   Future<void> loadTasks(String section) async {
     final tasksBox = await Hive.openBox('tasks');
     List taskList = tasksBox.values.toList();
-    if(taskModelList.isNotEmpty){
-      taskModelList.clear();
-    }
-    for(var item in taskList){
-      if(section=='Today'){
-        if(item['date']==DateFormat('d MMM yyyy').format(DateTime.now())){
-          taskModelList.add(TaskModel.fromJson(item));
+    todayTaskList.clear();
+    tomorrowTaskList.clear();
+    upcomingTaskList.clear();
+    for (var item in taskList) {
+      print('this is >> ${item['date']} ${item}');
+      TaskModel taskItem = TaskModel.fromJson(item);
+      if (taskItem.date == DateFormat('d MMM yyyy').format(DateTime.now())) {
+         todayTaskList.add(taskItem);
+      }
+      else if (taskItem.date ==
+          DateFormat('d MMM yyyy')
+              .format(DateTime.now().add(Duration(days: 1)))) {
+        if (!tomorrowTaskList.contains(taskItem)) {
+          tomorrowTaskList.add(taskItem);
         }
-      }else if(section=='Tomorrow'){
-         if(item['date']==DateFormat('d MMM yyyy').format(DateTime.now().add(Duration(days: 1)))){
-          taskModelList.add(TaskModel.fromJson(item));
+      } else {
+        if (!upcomingTaskList.contains(taskItem)) {
+          upcomingTaskList.add(taskItem);
         }
-      } else{
-         taskModelList.add(TaskModel.fromJson(item));
       }
     }
-    print('this is >>${taskModelList?.length}');
-    // taskModelList = taskList.map((e) => TaskModel.fromJson(e)).toList();
-    // if(section=='Today'){
-    //   taskModelList=taskModelList?.where((element) => element.date==DateTime.now().toString()).toList();
-    // }else if(section=='Tomorrow'){
-    //   taskModelList=taskModelList?.where((element) => element.date==DateTime.now().add(Duration(days: 1)).toString()).toList();
-    // }
+    print('this is >> ${todayTaskList} ${tomorrowTaskList}');
     notifyListeners();
   }
 
@@ -64,7 +72,7 @@ class TaskProvider extends ChangeNotifier {
 
     if (picked != null && picked != selectedTime) {
       selectedTime = picked;
-      
+
       callback(picked.format(context));
       notifyListeners();
     }
@@ -74,43 +82,61 @@ class TaskProvider extends ChangeNotifier {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
-      firstDate: DateTime.now().subtract(Duration(days: 1)),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
     if (picked != null && picked != selectedDate) {
       selectedDate = picked;
       DateTime dateOnly = DateTime(picked.year, picked.month, picked.day);
 
-    dateController.text = DateFormat('d MMM yyyy').format(dateOnly).toString();
+      dateController.text =
+          DateFormat('d MMM yyyy').format(dateOnly).toString();
       notifyListeners();
     }
   }
 
   void createOrUpdateTask(BuildContext context) {
-    TaskModel task = TaskModel(
-      id: Uuid().v4(),
-      title: taskTitleController.text,
-      description: taskDescController.text,
-      category: selectedCat,
-      date: dateController.text,
-      startTime: startTimeController.text,
-      endTime: endTimeController.text,
-    );
- 
-    print('this is >> ${task.id}');
+    if (taskModel?.id!=null) {
+      final tasksBox = Hive.box('tasks');
+      taskModel?.title = taskTitleController.text;
+      taskModel?.description = taskDescController.text;
+      taskModel?.category = selectedCat;
+      taskModel?.date = dateController.text;
+      taskModel?.startTime = startTimeController.text;
+      taskModel?.endTime = endTimeController.text;
+      List itemList=tasksBox.values.toList();
+      for(int i=0;i<itemList.length;i++){
+        if(itemList[i]['id']==taskModel?.id){
+          tasksBox.putAt(i, taskModel?.toMap());
+        }
+      }
+      Navigator.of(context).pop();
+    } else {
+      TaskModel task = TaskModel(
+        id: Uuid().v4(),
+        title: taskTitleController.text,
+        description: taskDescController.text,
+        category: selectedCat,
+        date: dateController.text,
+        startTime: startTimeController.text,
+        endTime: endTimeController.text,
+      );
 
-    final tasksBox = Hive.box('tasks');
-    tasksBox.put(Uuid().v4(), task.toMap());
-    Navigator.of(context).pop();
+      final tasksBox = Hive.box('tasks');
+      tasksBox.put(Uuid().v4(), task.toMap());
+
+      Navigator.of(context).pop();
+    }
   }
 
   void assignTaskItem(TaskModel task) {
-    dateController.text=task.date??'';
-    startTimeController.text=task.startTime??'';
-    endTimeController.text=task.endTime??'';
-    taskDescController.text=task.description??'';
-    selectedCat=task.category??'';
-    taskTitleController.text=task.title??'';
+    dateController.text = task.date ?? '';
+    startTimeController.text = task.startTime ?? '';
+    endTimeController.text = task.endTime ?? '';
+    taskDescController.text = task.description ?? '';
+    selectedCat = task.category ?? '';
+    taskModel = task;
+    taskTitleController.text = task.title ?? '';
     notifyListeners();
   }
 }

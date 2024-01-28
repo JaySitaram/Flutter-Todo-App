@@ -9,7 +9,9 @@ class AddOrEditTaskPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add Task', style: TextStyle(fontFamily: "SemiBold")),
+        title: Text(
+            taskProviderData.taskModel?.id != null ? 'Update Task' : 'Add Task',
+            style: TextStyle(fontFamily: "SemiBold")),
       ),
       body: SingleChildScrollView(
         child: Container(
@@ -55,6 +57,7 @@ class AddOrEditTaskPage extends ConsumerWidget {
                           .toList(),
                     ),
                   )),
+              SizedBox(height: 20),
               getTextFieldItem(
                   'Date', 'Enter Date', taskProviderData.dateController,
                   suffixWidget: IconButton(
@@ -111,7 +114,7 @@ class AddOrEditTaskPage extends ConsumerWidget {
                 },
                 minWidth: MediaQuery.of(context).size.width,
                 child: Text(
-                    taskProviderData.taskModel != null
+                    taskProviderData.taskModel?.id != null
                         ? 'Update Task'
                         : 'Create Task',
                     style: TextStyle(
@@ -135,10 +138,11 @@ class AddOrEditTaskPage extends ConsumerWidget {
         Text(title,
             style: TextStyle(
                 fontFamily: "Medium", color: Colors.black54, fontSize: 15)),
-        SizedBox(height: 5),
+        suffixWidget != null ? Container() : SizedBox(height: 5),
         TextFormField(
           style: TextStyle(fontFamily: "Medium", color: Colors.black),
           controller: controller,
+          readOnly: suffixWidget != null ? true : false,
           decoration: InputDecoration(hintText: hintText, suffix: suffixWidget),
         ),
         SizedBox(

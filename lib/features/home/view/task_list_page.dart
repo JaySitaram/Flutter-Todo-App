@@ -7,64 +7,40 @@ import 'package:flutter_todo_application/features/home/model/task_model.dart';
 import 'package:hive/hive.dart';
 
 class TaskList extends ConsumerStatefulWidget {
-  String section;
+  final String section;
+  final List<TaskModel> taskList;
 
-  TaskList({required this.section});
+  TaskList({required this.section, required this.taskList});
 
   @override
   ConsumerState<TaskList> createState() => _TaskListState();
 }
 
 class _TaskListState extends ConsumerState<TaskList> {
-  var taskModelData;
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    taskModelData = ref.read(taskProvider);
-    print('this is >>');
-    taskModelData.loadTasks(widget.section);
-  }  
-
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        SizedBox(
-          height: 20,
-        ),
+        SizedBox(height: 20),
         Text('Slide right on any task to update/delete task',
-            style: TextStyle(
-                fontFamily: "Medium", decoration: TextDecoration.underline)),
-        SizedBox(
-          height: 15,
-        ),
+            style: TextStyle(fontFamily: "Medium", decoration: TextDecoration.underline)),
+        SizedBox(height: 15),
         Divider(),
-        SizedBox(
-          height: 20,
-        ),
-        taskModelData.taskModelList.isNotEmpty
-            ? ListView.builder(
-                itemCount: taskModelData.taskModelList?.length,
-                shrinkWrap: true,
-                itemBuilder: (context, index) {
-                  return Column(
-                    children: [
-                      //Divider(),
-                      TaskTile(
-                          task: taskModelData.taskModelList![index],
-                          index: index),
-                      Padding(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                          child: Divider(
-                            color: Colors.purple,
-                          )),
-                    ],
-                  );
-                },
+        SizedBox(height: 20),
+        widget.taskList.isNotEmpty
+            ? Expanded(
+                child: ListView.separated(
+                  itemCount: widget.taskList.length,
+                  separatorBuilder: (context, index) => Divider(color: Colors.purple),
+                  itemBuilder: (context, index) {
+                    return TaskTile(
+                      task: widget.taskList[index],
+                      index: index,
+                    );
+                  },
+                ),
               )
-            : Center(child: CircularProgressIndicator()),
+            : Center(child: Text('No task here showing')),
       ],
     );
   }
@@ -88,16 +64,17 @@ class TaskTile extends ConsumerWidget {
             foregroundColor: Colors.white,
             icon: Icons.edit,
             label: 'Edit',
-            onPressed: (context) {
+            onPressed: (context) async {
               final taskProviderData = ref.read(taskProvider);
               taskProviderData.assignTaskItem(task);
-              Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => AddOrEditTaskPage()));
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => AddOrEditTaskPage()),
+              );
             },
           ),
           SlidableAction(
             onPressed: (context) {
-              _showDeleteConfirmationDialog(context, index);
+              _showDeleteConfirmationDialog(context);
             },
             backgroundColor: Color(0xFF0392CF),
             foregroundColor: Colors.white,
@@ -107,49 +84,42 @@ class TaskTile extends ConsumerWidget {
         ],
       ),
       child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-          decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.all(Radius.circular(10))),
-          child: ListTile(
-            title: Text(
-              task.title??'',
-              style: TextStyle(fontFamily: "Medium"),
-            ),
-            subtitle: Text(
-                    task.description??'',
-                    style: TextStyle(fontFamily: "Regular"),
-                  ),
-          )),
+        margin: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.all(Radius.circular(10)),
+        ),
+        child: ListTile(
+          title: Text(task.title ?? '', style: TextStyle(fontFamily: "Medium")),
+          subtitle: Text(task.description ?? '', style: TextStyle(fontFamily: "Regular")),
+        ),
+      ),
     );
   }
 
-  Future<void> _showDeleteConfirmationDialog(
-      BuildContext context, int? index) async {
+  Future<void> _showDeleteConfirmationDialog(BuildContext context) async {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title:
-              Text('Delete Confirmation', style: TextStyle(fontFamily: "Bold")),
-          content: Text('Are you sure you want to delete this item?',
-              style: TextStyle(fontFamily: "SemiBold")),
+          title: Text('Delete Confirmation', style: TextStyle(fontFamily: "Bold")),
+          content: Text('Are you sure you want to delete this item?', style: TextStyle(fontFamily: "SemiBold")),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Dismiss the dialog
               },
-              child: Text('No', style: TextStyle(fontFamily: "Medium")),
+              child: const Text('No', style: TextStyle(fontFamily: "Medium")),
             ),
             TextButton(
               onPressed: () async {
                 // Perform the delete operation here
                 final tasksBox = Hive.box('tasks');
-                await tasksBox.deleteAt(0);
-                // callback();
+                await tasksBox.deleteAt(index);
+            
                 Navigator.of(context).pop();
               },
-              child: Text('Yes', style: TextStyle(fontFamily: "Medium")),
+              child: const Text('Yes', style: TextStyle(fontFamily: "Medium")),
             ),
           ],
         );
