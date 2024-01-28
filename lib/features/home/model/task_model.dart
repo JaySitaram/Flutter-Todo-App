@@ -7,26 +7,26 @@ class TaskModel {
   @HiveField(0)
   String? id;
   @HiveField(1)
-  String title;
+  String? title;
   @HiveField(2)
-  String description;
+  String? description;
   @HiveField(3)
-  String category;
+  String? category;
   @HiveField(4)
-  String date;
+  String? date;
   @HiveField(5)
-  String startTime;
+  String? startTime;
   @HiveField(6)
-  String endTime;
+  String? endTime;
 
   TaskModel(
       {this.id,
-      required this.title,
-      required this.description,
-      required this.category,
-      required this.date,
-      required this.startTime,
-      required this.endTime});
+      this.title,
+      this.description,
+      this.category,
+      this.date,
+      this.startTime,
+      this.endTime});
 
   Map<String, dynamic> toMap() {
     return {
@@ -42,6 +42,7 @@ class TaskModel {
 
   factory TaskModel.fromJson(Map<dynamic, dynamic> map) {
     return TaskModel(
+        id: map['id'],
         title: map['title'],
         description: map['description'],
         category: map['category'],

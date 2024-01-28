@@ -6,31 +6,65 @@ import 'package:flutter_todo_application/features/add_task/view_model/task_provi
 import 'package:flutter_todo_application/features/home/model/task_model.dart';
 import 'package:hive/hive.dart';
 
-class TaskList extends ConsumerWidget {
-  final String section;
+class TaskList extends ConsumerStatefulWidget {
+  String section;
 
   TaskList({required this.section});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final taskModelData = ref.watch(taskProvider);
-    taskModelData.loadTasks();
+  ConsumerState<TaskList> createState() => _TaskListState();
+}
+
+class _TaskListState extends ConsumerState<TaskList> {
+  var taskModelData;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    taskModelData = ref.read(taskProvider);
+    print('this is >>');
+    taskModelData.loadTasks(widget.section);
+  }  
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         SizedBox(
           height: 20,
         ),
-        Text('Slide right on any task to update/delete task'),
+        Text('Slide right on any task to update/delete task',
+            style: TextStyle(
+                fontFamily: "Medium", decoration: TextDecoration.underline)),
+        SizedBox(
+          height: 15,
+        ),
+        Divider(),
         SizedBox(
           height: 20,
         ),
-        ListView.builder(
-          itemCount: taskModelData.taskModelList.length,
-          shrinkWrap: true,
-          itemBuilder: (context, index) {
-            return TaskTile(task: taskModelData.taskModelList[index]);
-          },
-        ),
+        taskModelData.taskModelList.isNotEmpty
+            ? ListView.builder(
+                itemCount: taskModelData.taskModelList?.length,
+                shrinkWrap: true,
+                itemBuilder: (context, index) {
+                  return Column(
+                    children: [
+                      //Divider(),
+                      TaskTile(
+                          task: taskModelData.taskModelList![index],
+                          index: index),
+                      Padding(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                          child: Divider(
+                            color: Colors.purple,
+                          )),
+                    ],
+                  );
+                },
+              )
+            : Center(child: CircularProgressIndicator()),
       ],
     );
   }
@@ -38,8 +72,9 @@ class TaskList extends ConsumerWidget {
 
 class TaskTile extends ConsumerWidget {
   final TaskModel task;
+  final int index;
 
-  TaskTile({required this.task});
+  TaskTile({required this.task, required this.index});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,12 +91,13 @@ class TaskTile extends ConsumerWidget {
             onPressed: (context) {
               final taskProviderData = ref.read(taskProvider);
               taskProviderData.assignTaskItem(task);
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddOrEditTaskPage()));
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => AddOrEditTaskPage()));
             },
           ),
           SlidableAction(
             onPressed: (context) {
-              _showDeleteConfirmationDialog(context, task.id);
+              _showDeleteConfirmationDialog(context, index);
             },
             backgroundColor: Color(0xFF0392CF),
             foregroundColor: Colors.white,
@@ -70,35 +106,50 @@ class TaskTile extends ConsumerWidget {
           ),
         ],
       ),
-      child: ListTile(
-        title: Text(task.title),
-        subtitle: task.description.isNotEmpty ? Text(task.description) : null,
-      ),
+      child: Container(
+          margin: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+          decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.all(Radius.circular(10))),
+          child: ListTile(
+            title: Text(
+              task.title??'',
+              style: TextStyle(fontFamily: "Medium"),
+            ),
+            subtitle: Text(
+                    task.description??'',
+                    style: TextStyle(fontFamily: "Regular"),
+                  ),
+          )),
     );
   }
 
-  Future<void> _showDeleteConfirmationDialog(BuildContext context, String? id) async {
+  Future<void> _showDeleteConfirmationDialog(
+      BuildContext context, int? index) async {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Delete Confirmation'),
-          content: Text('Are you sure you want to delete this item?'),
+          title:
+              Text('Delete Confirmation', style: TextStyle(fontFamily: "Bold")),
+          content: Text('Are you sure you want to delete this item?',
+              style: TextStyle(fontFamily: "SemiBold")),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Dismiss the dialog
               },
-              child: Text('No'),
+              child: Text('No', style: TextStyle(fontFamily: "Medium")),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 // Perform the delete operation here
                 final tasksBox = Hive.box('tasks');
-                tasksBox.delete(id);
+                await tasksBox.deleteAt(0);
+                // callback();
                 Navigator.of(context).pop();
               },
-              child: Text('Yes'),
+              child: Text('Yes', style: TextStyle(fontFamily: "Medium")),
             ),
           ],
         );
