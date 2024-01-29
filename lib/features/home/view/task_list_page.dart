@@ -115,7 +115,14 @@ class TaskTile extends ConsumerWidget {
               onPressed: () async {
                 // Perform the delete operation here
                 final tasksBox = Hive.box('tasks');
-                await tasksBox.deleteAt(index);
+                List listItem=tasksBox.values.toList();
+                for(int i=0;i<listItem.length;i++){
+                  print('this is >> $i ${listItem[i]}');
+                   if(listItem[i]['id']==task.id){
+                    
+          await tasksBox.deleteAt(i);
+        }
+                }
             
                 Navigator.of(context).pop();
               },
